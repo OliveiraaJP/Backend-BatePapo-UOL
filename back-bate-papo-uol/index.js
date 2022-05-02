@@ -101,6 +101,52 @@ app.get("/messages", async (req, res) => {
   }
 })
 
+app.post("/messages", async (req, res) => {
+try{
+  const {to, text, type} = req.body
+  const user = req.headers.user
+
+  const userSchema = joi.object({
+    to: joi.string().min(1).required(),
+    text: joi.string().min(1).required(),
+    type: joi.required().valid("message","private_message")
+  });
+
+  const validation = userSchema.validate(req.body)
+
+  const userValidation = await database.collection.participants.findOne({name: user})
+
+  if(validation.error){
+    res.sendStatus(422);
+    return;
+  }
+
+  if (!userValidation){
+    res.sendStatus(422);
+    return;
+  }
+
+
+  await database.collection.messages.insertOne({
+    to,
+    text,
+    type,
+    from: user,
+    time: dayjs().locale("pt-br").format("HH:mm:ss")
+  })
+
+  res.sendStatus(201)
+
+} catch(e){
+  console.log("post messages error");
+}
+})
+
+app.post("/status", (req, res) =>{
+  
+})
+
+
 app.listen(5000, () => {
   console.log(
     chalk.magentaBright.bold("Server is running on: http://localhost:5000")
