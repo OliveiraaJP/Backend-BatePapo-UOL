@@ -31,7 +31,6 @@ setInterval(async ()=>{
     const allParticipants = await database.collection("participants").find({}).toArray()
 
     if(!allParticipants){
-      console.log("nenhum participante");
       return;
     }
 
@@ -46,9 +45,8 @@ setInterval(async ()=>{
             type: "status",
             time: dayjs().locale("pt-br").format("HH:mm:ss")
           })
-          console.log(participant.name ,"deletou legal vazou passou 10s");
         }catch(e){
-          console.log("falou a remoção inativa");
+          console.log("inactive try function error!");
         }
       }
     })
@@ -191,7 +189,6 @@ app.post("/status", async (req, res) =>{
 
   if(userExist === undefined ){
     res.sendStatus(404)
-    console.log("participante nao ta na lista");
     return;
   }
 
