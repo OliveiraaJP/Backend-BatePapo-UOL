@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import dayjs from "dayjs";
 import joi from "joi";
 
+
 dotenv.config();
 
 const app = express();
@@ -25,7 +26,36 @@ promise.catch((e) => console.log("Connection Lost", e));
 
 
 function removeInactive(){
+setInterval(async ()=>{
+  try{
+    const allParticipants = await database.collection("participants").find({}).toArray()
 
+    if(!allParticipants){
+      console.log("nenhum participante");
+      return;
+    }
+
+    allParticipants.forEach(async (participant) => {
+      if(Date.now() - parseInt(participant.lastStatus) > 10000){
+        try{
+          await database.collection("participants").deleteOne({name: participant.name});
+          await database.collection("messages").insertOne({
+            from: participant.name,
+            to: "Todos",
+            text: "sai da sala...",
+            type: "status",
+            time: dayjs().locale("pt-br").format("HH:mm:ss")
+          })
+          console.log(participant.name ,"deletou legal vazou passou 10s");
+        }catch(e){
+          console.log("falou a remoção inativa");
+        }
+      }
+    })
+  }catch(e){
+    console.log("remove inactive error")
+  }
+}, 15000)
 }
 
 
@@ -65,6 +95,7 @@ app.post("/participants", async (req, res) => {
       time: dayjs().locale("pt-br").format("HH:mm:ss"),
     });
 
+    removeInactive()
     res.sendStatus(201);
   } catch (e) {
     console.log(chalk.redBright.bold("error"));
@@ -156,7 +187,7 @@ app.post("/status", async (req, res) =>{
   
   try{
   const userExist = await database.collection("participants").findOne({name: user})
-    console.log(userExist);
+    
 
   if(userExist === undefined ){
     res.sendStatus(404)
@@ -164,9 +195,9 @@ app.post("/status", async (req, res) =>{
     return;
   }
 
-  await database.collection("participants").updateOne({name:userExist},{$set: {lastStatus: Date.now()}} );
+  await database.collection("participants").updateOne({name:user},{$set: {lastStatus: Date.now()}} );
   res.sendStatus(200)
-  console.log("Status updated");
+  
 
 
 } catch(e){
