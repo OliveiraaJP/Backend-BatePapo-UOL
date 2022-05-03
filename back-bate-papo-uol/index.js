@@ -21,6 +21,14 @@ promise.then(() => {
 });
 promise.catch((e) => console.log("Connection Lost", e));
 
+
+
+
+function removeInactive(){
+
+}
+
+
 app.post("/participants", async (req, res) => {
   try {
     const { name } = req.body;
@@ -114,7 +122,7 @@ try{
 
   const validation = userSchema.validate(req.body)
 
-  const userValidation = await database.collection.participants.findOne({name: user})
+  const userValidation = await database.collection("participants").findOne({name: user})
 
   if(validation.error){
     res.sendStatus(422);
@@ -127,7 +135,7 @@ try{
   }
 
 
-  await database.collection.messages.insertOne({
+  await database.collection("messages").insertOne({
     to,
     text,
     type,
@@ -139,11 +147,32 @@ try{
 
 } catch(e){
   console.log("post messages error");
+  res.sendStatus(500)
 }
 })
 
-app.post("/status", (req, res) =>{
+app.post("/status", async (req, res) =>{
+  const user = req.headers.user
   
+  try{
+  const userExist = await database.collection("participants").findOne({name: user})
+    console.log(userExist);
+
+  if(userExist === undefined ){
+    res.sendStatus(404)
+    console.log("participante nao ta na lista");
+    return;
+  }
+
+  await database.collection("participants").updateOne({name:userExist},{$set: {lastStatus: Date.now()}} );
+  res.sendStatus(200)
+  console.log("Status updated");
+
+
+} catch(e){
+  console.log("erro post status");
+  res.sendStatus(500)
+}
 })
 
 
